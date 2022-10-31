@@ -2,13 +2,12 @@ FROM centos:7
 
 ENV LANG='en_US.UTF-8' LANGUAGE='en_US:en' LC_ALL='en_US.UTF-8'
 
-RUN yum install -y tzdata openssl curl vim ca-certificates fontconfig gzip tar mysql
+RUN yum install -y tzdata openssl curl vim ca-certificates fontconfig gzip tar mysql java-11-openjdk
 
-ADD jdk-11.0.16_linux-x64_bin.tar.gz /usr/local/bin/
 COPY /be /opt/starrocks/be/
 Copy cn_entrypoint.sh cn_stop.sh /opt/starrocks/
 
-ENV JAVA_HOME=/usr/local/bin/jdk-11.0.16/ \
+ENV JAVA_HOME=/usr/lib/jvm/jre-11-openjdk/ \
     PATH="/usr/local/bin/jdk-11.0.16/bin:$PATH"
 
 ENV STARROCKS_ROOT=/opt/starrocks

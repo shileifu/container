@@ -49,7 +49,7 @@ assignment_variable() {
         memlist=$(show_frontends $svc)
         local leader_line=$(echo "$memlist" | grep '\<LEADER\>')
 
-        if [[ "x$leader" != "x" ]]; then
+        if [[ "x$leader_line" != "x" ]]; then
             # | Name | IP | EditLogPort | HttpPort | QueryPort | RpcPort | Role |
             FE_LEADER=$(echo "$leader_line" | awk '{print $2}')
             EDIT_LOG_PORT=$(echo "$memlist" | grep '\<LEADER\>' | awk '{print $3}')
@@ -68,8 +68,10 @@ transfer_master() {
 }
 
 set_self_not_leader() {
+    local svc=$1
+    local start=$(date +%s)
     while true; do
-        assignment_variable
+        assignment_variable $svc
         if [[ "x$SELF_ROLE" == "xLEADER" ]]; then
             if [[ "x$LEFT_NODE_LSITS" == "x" ]] ; then
                 log_stderr "No other nodes left. Can't do master switch ..."
@@ -93,7 +95,7 @@ drop_follower_observer() {
     while true
     do
         timeout 30 mysql --connect-timeout 2 -h $FE_LEADER -P $QUERY_PORT -u root --skip-column-names --batch -e "ALTER SYSTEM DROP follower '$SELF_HOST:$EDIT_LOG_PORT';"
-        local memlist=`show_frontends`
+        local memlist=`show_frontends $FE_LEADER`
         if [[ -n "$memlist" ]] ; then
             if ! echo "$memlist" | grep -q -w "$SELF_HOST" &>/dev/null ; then
                 # can't find myself from `show_frontends` any more

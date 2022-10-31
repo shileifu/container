@@ -162,6 +162,7 @@ probe_leader()
 start_fe()
 {
     # apply --host_type and --helper option
+    local svc=$1
     local opts=""
     if [[ "x$HOST_TYPE" != "x" ]] ; then
         opts+=" --host_type $HOST_TYPE"
@@ -182,7 +183,7 @@ start_fe()
 ALTER SYSTEM ADD FOLLOWER "$follower:$EDIT_LOG_PORT"
 EOF
             # check if added successful
-            if show_frontends | grep -q -w "$follower:$EDIT_LOG_PORT" &>/dev/null ; then
+            if show_frontends $svc | grep -q -w "$follower" &>/dev/null ; then
                 break;
             fi
 
@@ -211,4 +212,4 @@ fi
 
 collect_env_info 
 probe_leader $svc_name
-start_fe
+start_fe $svc_name
