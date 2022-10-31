@@ -6,12 +6,12 @@ RUN yum install -y tzdata openssl curl vim ca-certificates fontconfig gzip tar m
 
 ADD jdk-11.0.16_linux-x64_bin.tar.gz /usr/local/bin/
 COPY /be /opt/starrocks/be/
-Copy cn_entry.sh cn_stop.sh /opt/starrocks/
+Copy cn_entrypoint.sh cn_stop.sh /opt/starrocks/
 
 ENV JAVA_HOME=/usr/local/bin/jdk-11.0.16/ \
     PATH="/usr/local/bin/jdk-11.0.16/bin:$PATH"
 
-ENV STARROCK_HOME=/opt/starrocks
+ENV STARROCKS_ROOT=/opt/starrocks
 USER root
 RUN mkdir -p /opt/starrocks/fe/meta/
 Workdir /opt/starrocks
