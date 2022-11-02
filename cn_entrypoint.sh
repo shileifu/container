@@ -55,9 +55,7 @@ add_self()
     while true
     do
         log_stderr "Add myself ($MY_SELF:$HEARTBEAT_PORT) into FE ..."
-        timeout 15 mysql --connect-timeout 2 -h $svc -P $FE_QUERY_PORT -u root --skip-column-names --batch << EOF
-ALTER SYSTEM ADD COMPUTE NODE "$MY_SELF:$HEARTBEAT_PORT"
-EOF
+        timeout 15 mysql --connect-timeout 2 -h $svc -P $FE_QUERY_PORT -u root --skip-column-names --batch -e "ALTER SYSTEM ADD COMPUTE NODE \"$MY_SELF:$HEARTBEAT_PORT\";"
         memlist=`show_compute_nodes $svc`
         if echo "$memlist" | grep -q -w "$MY_SELF" &>/dev/null ; then
             break;
@@ -94,9 +92,7 @@ drop_my_self()
                 return 0
             else
                 log_stderr "drop my self $selfinfo ..."
-                timeout 15 mysql --connect-timeout 2 -h $svc -P $FE_QUERY_PORT -u root --skip-column-names --batch << EOF
-ALTER SYSTEM DROP COMPUTE NODE "$selfinfo";
-EOF
+                timeout 15 mysql --connect-timeout 2 -h $svc -P $FE_QUERY_PORT -u root --skip-column-names --batch -e "ALTER SYSTEM DROP COMPUTE NODE \"$selfinfo\";"
             fi
         else
             log_stderr "Got error $ret, sleep and retry ..."
