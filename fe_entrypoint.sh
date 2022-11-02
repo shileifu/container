@@ -16,8 +16,9 @@ PROBE_INTERVAL=2
 PROBE_LEADER_POD0_TIMEOUT=60 # at most 15 attempts, no less than the times needed for an election
 PROBE_LEADER_PODX_TIMEOUT=120 # at most 60 attempts
 
-STARROCK_HOME=${STARROCK_HOME:-"/opt/starrocks"}
-FE_CONFFILE=$STARROCK_HOME/fe/conf/fe.conf
+STARROCKS_ROOT=${STARROCKS_ROOT:-"/opt/starrocks"}
+STARROCKS_HOME=$STARROCKS_ROOT/fe
+FE_CONFFILE=$STARROCKS_HOME/conf/fe.conf
 
 
 log_stderr()
@@ -161,6 +162,7 @@ probe_leader()
 start_fe()
 {
     # apply --host_type and --helper option
+    local svc=$1
     local opts=""
     if [[ "x$HOST_TYPE" != "x" ]] ; then
         opts+=" --host_type $HOST_TYPE"
@@ -173,14 +175,32 @@ start_fe()
             follower=$POD_FQDN
         fi
 
-        log_stderr "Add myself($follower:$EDIT_LOG_PORT) to leader as follower ..."
-        mysql --connect-timeout 2 -h $FE_LEADER -P $QUERY_PORT -u root --skip-column-names --batch << EOF
+        local start=`date +%s`
+        while true
+        do
+            log_stderr "Add myself($follower:$EDIT_LOG_PORT) to leader as follower ..."
+            mysql --connect-timeout 2 -h $FE_LEADER -P $QUERY_PORT -u root --skip-column-names --batch << EOF
 ALTER SYSTEM ADD FOLLOWER "$follower:$EDIT_LOG_PORT"
 EOF
+            # check if added successful
+            if show_frontends $svc | grep -q -w "$follower" &>/dev/null ; then
+                break;
+            fi
+
+            local now=`date +%s`
+            let "expire=start+PROBE_LEADER_PODX_TIMEOUT"
+            if [[ $expire -le $now ]] ; then
+                log_stderr "Timed out, abort!"
+                exit 1
+            fi
+
+            log_stderr "Sleep a while and retry adding ..."
+            sleep $PROBE_INTERVAL
+        done
     fi
 
     log_stderr "run start_fe.sh with additional options: '$opts'"
-    $STARROCK_HOME/fe/bin/start_fe.sh $opts
+    exec $STARROCKS_ROOT/fe/bin/start_fe.sh $opts
 }
 
 svc_name=$1
@@ -191,6 +211,5 @@ if [[ "x$svc_name" == "x" ]] ; then
 fi
 
 collect_env_info 
-# set FE_LEADER
 probe_leader $svc_name
-start_fe
+start_fe $svc_name
