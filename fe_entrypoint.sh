@@ -24,6 +24,9 @@ STARROCKS_HOME=${STARROCKS_ROOT}/fe
 FE_CONFFILE=$STARROCKS_HOME/conf/fe.conf
 EXIT_IN_PROGRESS=false
 
+# POD environment variable, if not set, don't do conf file link
+CONFIGMAP_MOUNT_PATH=
+
 
 log_stderr()
 {
@@ -216,6 +219,29 @@ exit_fe_term()
     exit_fe_handler
 }
 
+update_conf_from_configmap
+{
+    if [[ "x$CONFIGMAP_MOUNT_PATH" == "x" ]] ; then
+        log_stderr 'Empty $CONFIGMAP_MOUNT_PATH env var, skip it!'
+        return 0
+    fi
+    if ! test -d $CONFIGMAP_MOUNT_PATH ; then
+        log_stderr "$CONFIGMAP_MOUNT_PATH not exist or not a directory, ignore ..."
+        return 0
+    fi
+    local tgtconfdir=$STARROCKS_HOME/conf
+    for conffile in `ls $CONFIGMAP_MOUNT_PATH`
+    do
+        log_stderr "Process conf file $conffile ..."
+        local tgt=$tgtconfdir/$conffile
+        if test -e $tgt ; then
+            # make a backup
+            mv -f $tgt ${tgt}.bak
+        fi
+        ln -sfT $CONFIGMAP_MOUNT_PATH/$conffile $tgt
+    done
+}
+
 start_fe()
 {
     # apply --host_type and --helper option
@@ -266,4 +292,5 @@ fi
 
 collect_env_info 
 probe_leader $svc_name
+update_conf_from_configmap
 start_fe $svc_name
