@@ -219,7 +219,7 @@ exit_fe_term()
     exit_fe_handler
 }
 
-update_conf_from_configmap
+update_conf_from_configmap()
 {
     if [[ "x$CONFIGMAP_MOUNT_PATH" == "x" ]] ; then
         log_stderr 'Empty $CONFIGMAP_MOUNT_PATH env var, skip it!'
